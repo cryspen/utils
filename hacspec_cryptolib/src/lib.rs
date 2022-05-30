@@ -54,7 +54,7 @@ pub fn hash(ha: &HashAlgorithm, payload: &ByteSeq) -> CryptoByteSeqResult {
 }
 
 /// HKDF Extract.
-pub fn hkdf_extract(ha: HashAlgorithm, k: &Key, salt: &Key) -> CryptoByteSeqResult {
+pub fn hkdf_extract(ha: &HashAlgorithm, k: &Key, salt: &Key) -> CryptoByteSeqResult {
     match ha {
         HashAlgorithm::SHA256 => CryptoByteSeqResult::Ok(Key::from_seq(&extract(salt, k))),
         HashAlgorithm::SHA384 => CryptoByteSeqResult::Err(UNSUPPORTED_ALGORITHM),
@@ -63,7 +63,7 @@ pub fn hkdf_extract(ha: HashAlgorithm, k: &Key, salt: &Key) -> CryptoByteSeqResu
 }
 
 /// HKDF Expand.
-pub fn hkdf_expand(ha: HashAlgorithm, k: &Key, info: &ByteSeq, len: usize) -> CryptoByteSeqResult {
+pub fn hkdf_expand(ha: &HashAlgorithm, k: &Key, info: &ByteSeq, len: usize) -> CryptoByteSeqResult {
     match ha {
         HashAlgorithm::SHA256 => match expand(k, info, len) {
             HkdfByteSeqResult::Ok(b) => CryptoByteSeqResult::Ok(b),
