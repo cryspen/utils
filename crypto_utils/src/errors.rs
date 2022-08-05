@@ -7,3 +7,4 @@ pub const INVALID_CERT: CryptoError = 4u8;
 pub const MAC_FAILED: CryptoError = 5u8;
 pub const UNSUPPORTED_ALGORITHM: CryptoError = 6u8;
 pub const VERIFY_FAILED: CryptoError = 7u8;
+pub const INCONSISTENT_ARGUMENTS: CryptoError = 8u8;

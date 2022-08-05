@@ -7,7 +7,7 @@ use evercrypt_cryptolib::*;
 use hacspec_lib::*;
 
 const GOOGLE_COM_DER_FILE: &'static str = "tests/google-com.der";
-const GOOGLE_COM_ECDSA_PK: &'static str = "0427adafecc3e0e56a9af70fe47bcca23f5b250ba0b9238a2c38c77617b4a9f2fc09f302aec2a36c98888cf34fc4fa3bb85742b2c5bb4e2d76a1f75e42f78dbc31";
+const GOOGLE_COM_ECDSA_PK: &'static str = "27adafecc3e0e56a9af70fe47bcca23f5b250ba0b9238a2c38c77617b4a9f2fc09f302aec2a36c98888cf34fc4fa3bb85742b2c5bb4e2d76a1f75e42f78dbc31";
 
 fn read_google_cert() -> Vec<u8> {
     let cert_file = File::open(GOOGLE_COM_DER_FILE).expect("Error opening cert file");
