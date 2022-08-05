@@ -56,6 +56,11 @@ pub fn sign(
 }
 
 fn p256_verify(pk: &VerificationKey, payload: &ByteSeq, sig: &ByteSeq) -> EmptyResult {
+    println!(
+        "P256 verification with\n\tpk {}\n of\t\n{}",
+        pk.to_hex(),
+        payload.to_hex()
+    );
     let (pk_x, pk_y) = (
         P256FieldElement::from_byte_seq_be(&pk.slice(0, 32)),
         P256FieldElement::from_byte_seq_be(&pk.slice(32, 32)),
@@ -70,17 +75,39 @@ fn p256_verify(pk: &VerificationKey, payload: &ByteSeq, sig: &ByteSeq) -> EmptyR
     }
 }
 
+fn ecdsa_key(pk: &PublicVerificationKey) -> VerificationKeyResult {
+    if let PublicVerificationKey::EcDsa(pk) = pk {
+        VerificationKeyResult::Ok(pk.clone())
+    } else {
+        VerificationKeyResult::Err(INCONSISTENT_ARGUMENTS)
+    }
+}
+
+fn rsa_key(pk: &PublicVerificationKey) -> RsaVerificationKeyResult {
+    if let PublicVerificationKey::Rsa(pk) = pk {
+        RsaVerificationKeyResult::Ok(pk.clone())
+    } else {
+        RsaVerificationKeyResult::Err(INCONSISTENT_ARGUMENTS)
+    }
+}
+
 /// Verify the signature on the `payload` with the given [`VerificationKey`] and
 /// [`SignatureScheme`].
 pub fn verify(
     sa: &SignatureScheme,
-    pk: &VerificationKey,
+    pk: &PublicVerificationKey,
     payload: &ByteSeq,
     sig: &ByteSeq,
 ) -> EmptyResult {
     match sa {
-        SignatureScheme::EcdsaSecp256r1Sha256 => p256_verify(pk, payload, sig),
+        SignatureScheme::EcdsaSecp256r1Sha256 => {
+            let pk = ecdsa_key(pk)?;
+            p256_verify(&pk, payload, sig)
+        }
         SignatureScheme::ED25519 => EmptyResult::Err(UNSUPPORTED_ALGORITHM),
-        SignatureScheme::RsaPssRsaSha256 => EmptyResult::Err(UNSUPPORTED_ALGORITHM),
+        SignatureScheme::RsaPssRsaSha256 => {
+            let _pk = rsa_key(pk)?;
+            todo!("Implement RSA PSS verification in hacspec")
+        }
     }
 }

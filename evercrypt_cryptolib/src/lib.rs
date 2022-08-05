@@ -81,7 +81,7 @@ pub fn signature_support(signature: &SignatureScheme) -> EmptyResult {
     match signature {
         SignatureScheme::ED25519 => EmptyResult::Ok(()),
         SignatureScheme::EcdsaSecp256r1Sha256 => EmptyResult::Ok(()),
-        SignatureScheme::RsaPssRsaSha256 => EmptyResult::Err(UNSUPPORTED_ALGORITHM),
+        SignatureScheme::RsaPssRsaSha256 => EmptyResult::Ok(()),
     }
 }
 
@@ -224,7 +224,7 @@ pub fn kem_decap(ks: &KemScheme, ct: &ByteSeq, sk: KemSk) -> CryptoByteSeqResult
 // FIXME: #98 add #[unsafe_hacspec] attribute
 fn sha256_unsafe(payload: &ByteSeq) -> CryptoByteSeqResult {
     Ok(Digest::from_public_slice(&evercrypt::digest::hash(
-        DigestMode::Sha256,
+        DigestAlgorithm::Sha256,
         &payload.to_native(),
     )))
 }
@@ -243,7 +243,7 @@ pub fn hash(ha: &HashAlgorithm, payload: &ByteSeq) -> CryptoByteSeqResult {
 // FIXME: #98 add #[unsafe_hacspec] attribute
 fn hmac_sha256_unsafe(mk: &MacKey, payload: &ByteSeq) -> CryptoByteSeqResult {
     Ok(HMAC::from_public_slice(&evercrypt::hmac::hmac(
-        HmacMode::Sha256,
+        HmacAlgorithm::Sha256,
         &mk.to_native(),
         &payload.to_native(),
         None,
@@ -299,7 +299,7 @@ fn p256_sha256_sign_unsafe(
     sk.copy_from_slice(&ps.to_native());
     let mut nonce = [0u8; 32];
     nonce.copy_from_slice(&random.to_native());
-    match p256_sign(DigestMode::Sha256, &payload.to_native(), &sk, &nonce) {
+    match p256_sign(DigestAlgorithm::Sha256, &payload.to_native(), &sk, &nonce) {
         // FIXME: this must encode the signature with ASN.1
         Ok(s) => Ok(Signature::from_public_slice(&s.raw())),
         Err(_e) => Err(CRYPTO_ERROR),
@@ -316,7 +316,7 @@ pub fn sign(
     match sa {
         SignatureScheme::EcdsaSecp256r1Sha256 => p256_sha256_sign_unsafe(ps, payload, &ent),
         SignatureScheme::ED25519 => CryptoByteSeqResult::Err(UNSUPPORTED_ALGORITHM),
-        SignatureScheme::RsaPssRsaSha256 => CryptoByteSeqResult::Err(UNSUPPORTED_ALGORITHM),
+        SignatureScheme::RsaPssRsaSha256 => CryptoByteSeqResult::Err(UNSUPPORTED_ALGORITHM), // FIXME: add signing.
     }
 }
 
@@ -329,7 +329,7 @@ fn p256_sha256_verify_unsafe(
     let mut sig_bytes = [0u8; 64];
     sig_bytes.copy_from_slice(&sig.to_native());
     let result = p256_verify(
-        DigestMode::Sha256,
+        DigestAlgorithm::Sha256,
         &payload.to_native(),
         &pk.to_native(),
         &EcdsaSignature::from_bytes(&sig_bytes),
@@ -345,18 +345,64 @@ fn p256_sha256_verify_unsafe(
     }
 }
 
+fn ecdsa_key(pk: &PublicVerificationKey) -> VerificationKeyResult {
+    if let PublicVerificationKey::EcDsa(pk) = pk {
+        VerificationKeyResult::Ok(pk.clone())
+    } else {
+        VerificationKeyResult::Err(INCONSISTENT_ARGUMENTS)
+    }
+}
+
+fn rsa_key(pk: &PublicVerificationKey) -> RsaVerificationKeyResult {
+    if let PublicVerificationKey::Rsa(pk) = pk {
+        RsaVerificationKeyResult::Ok(pk.clone())
+    } else {
+        RsaVerificationKeyResult::Err(INCONSISTENT_ARGUMENTS)
+    }
+}
+
+// FIXME: #98 add #[unsafe_hacspec] attribute
+fn rsa_pss_sha256_verify_unsafe(
+    pk: &RsaVerificationKey,
+    payload: &ByteSeq,
+    sig: &ByteSeq,
+) -> EmptyResult {
+    let n = RsaPssPublicKey::new(
+        RsaPssKeySize::try_from(pk.0.len()).unwrap(),
+        &pk.0.to_native(),
+    )
+    .unwrap();
+    let digest = DigestAlgorithm::Sha256;
+    match rsa_pss_verify(
+        digest,
+        &n,
+        &sig.to_native(),
+        &payload.to_native(),
+        digest.size(),
+    ) {
+        Ok(_) => EmptyResult::Ok(()),
+        Err(_) => EmptyResult::Err(VERIFY_FAILED),
+    }
+}
+
 /// Verify the signature on the `payload` with the given [`VerificationKey`] and
 /// [`SignatureScheme`].
 pub fn verify(
     sa: &SignatureScheme,
-    pk: &VerificationKey,
+    pk: &PublicVerificationKey,
     payload: &ByteSeq,
     sig: &ByteSeq,
 ) -> EmptyResult {
     match sa {
-        SignatureScheme::EcdsaSecp256r1Sha256 => p256_sha256_verify_unsafe(pk, payload, sig),
+        SignatureScheme::EcdsaSecp256r1Sha256 => {
+            let pk = ecdsa_key(pk)?;
+            p256_sha256_verify_unsafe(&pk, payload, sig)
+        }
         SignatureScheme::ED25519 => EmptyResult::Err(UNSUPPORTED_ALGORITHM),
-        SignatureScheme::RsaPssRsaSha256 => EmptyResult::Err(UNSUPPORTED_ALGORITHM),
+        SignatureScheme::RsaPssRsaSha256 => {
+            let pk = rsa_key(pk)?;
+            rsa_pss_sha256_verify_unsafe(&pk, payload, sig)
+        }
     }
 }
 
@@ -365,7 +411,7 @@ pub fn verify(
 // FIXME: #98 add #[unsafe_hacspec] attribute
 fn hkdf_extract_unsafe(k: &Key, salt: &Key) -> CryptoByteSeqResult {
     Ok(Key::from_public_slice(&hkdf::extract(
-        HmacMode::Sha256,
+        HmacAlgorithm::Sha256,
         &salt.to_native(),
         &k.to_native(),
     )))
@@ -374,7 +420,7 @@ fn hkdf_extract_unsafe(k: &Key, salt: &Key) -> CryptoByteSeqResult {
 // FIXME: #98 add #[unsafe_hacspec] attribute
 fn hkdf_expand_unsafe(k: &Key, info: &ByteSeq, len: usize) -> CryptoByteSeqResult {
     Ok(Key::from_public_slice(&hkdf::expand(
-        HmacMode::Sha256,
+        HmacAlgorithm::Sha256,
         &k.to_native(),
         &info.to_native(),
         len,

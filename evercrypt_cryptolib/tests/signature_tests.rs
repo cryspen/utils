@@ -17,6 +17,7 @@ fn sign_verify() {
         entropy,
     )
     .expect("Error signing");
+    let pk = PublicVerificationKey::EcDsa(pk);
     assert!(verify(
         &SignatureScheme::EcdsaSecp256r1Sha256,
         &pk,
