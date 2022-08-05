@@ -24,6 +24,7 @@ use hacspec_sha256::*;
 // === Modules === //
 
 mod aead;
+mod asn1;
 mod ecdh;
 mod kem;
 mod mac;
@@ -32,6 +33,7 @@ mod support;
 mod types;
 
 pub use aead::*;
+pub use asn1::*;
 pub use ecdh::*;
 pub use kem::*;
 pub use mac::*;

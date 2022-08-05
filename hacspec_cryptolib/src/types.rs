@@ -9,6 +9,14 @@ pub type HMAC = ByteSeq;
 
 pub type SignatureKey = ByteSeq;
 pub type VerificationKey = ByteSeq;
+pub type RsaVerificationKey = (ByteSeq, ByteSeq); // N, e
+
+#[derive(Debug)]
+pub enum PublicVerificationKey {
+    EcDsa(VerificationKey),  // Uncompressed point 0x04...
+    Rsa(RsaVerificationKey), // N, e
+}
+
 pub type Signature = ByteSeq;
 
 pub type AeadKey = ByteSeq;
