@@ -1,4 +1,5 @@
 mod errors;
+
 pub use errors::*;
 
 /// Named ECC curves.

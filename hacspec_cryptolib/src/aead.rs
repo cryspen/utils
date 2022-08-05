@@ -1,5 +1,8 @@
 use crate::*;
 
+pub const AEAD_MAC_FAILED: CryptoError = 5u8;
+pub const AEAD_UNSUPPORTED_ALGORITHM: CryptoError = 6u8;
+
 fn aes128_encrypt(
     k: &AeadKey,
     iv: &AeadIv,
@@ -31,7 +34,7 @@ pub fn aead_encrypt(
 ) -> CryptoByteSeqResult {
     match a {
         AeadAlgorithm::Aes128Gcm => aes128_encrypt(k, iv, payload, ad),
-        AeadAlgorithm::Aes256Gcm => CryptoByteSeqResult::Err(UNSUPPORTED_ALGORITHM),
+        AeadAlgorithm::Aes256Gcm => CryptoByteSeqResult::Err(AEAD_UNSUPPORTED_ALGORITHM),
         AeadAlgorithm::Chacha20Poly1305 => chacha_encrypt(k, iv, payload, ad),
     }
 }
@@ -50,7 +53,7 @@ fn aes128_decrypt(
         Gf128Tag::from_seq(&ciphertext.slice_range(ciphertext.len() - 16..ciphertext.len())),
     ) {
         AesGcmByteSeqResult::Ok(m) => CryptoByteSeqResult::Ok(m),
-        AesGcmByteSeqResult::Err(_) => CryptoByteSeqResult::Err(MAC_FAILED),
+        AesGcmByteSeqResult::Err(_) => CryptoByteSeqResult::Err(AEAD_MAC_FAILED),
     }
 }
 
@@ -68,7 +71,7 @@ fn chacha_decrypt(
         Poly1305Tag::from_seq(&ciphertext.slice_range(ciphertext.len() - 16..ciphertext.len())),
     ) {
         ByteSeqResult::Ok(ptxt) => CryptoByteSeqResult::Ok(ptxt),
-        ByteSeqResult::Err(_) => CryptoByteSeqResult::Err(MAC_FAILED),
+        ByteSeqResult::Err(_) => CryptoByteSeqResult::Err(AEAD_MAC_FAILED),
     }
 }
 
@@ -82,7 +85,7 @@ pub fn aead_decrypt(
 ) -> CryptoByteSeqResult {
     match a {
         AeadAlgorithm::Aes128Gcm => aes128_decrypt(k, iv, ciphertext, ad),
-        AeadAlgorithm::Aes256Gcm => CryptoByteSeqResult::Err(UNSUPPORTED_ALGORITHM),
+        AeadAlgorithm::Aes256Gcm => CryptoByteSeqResult::Err(AEAD_UNSUPPORTED_ALGORITHM),
         AeadAlgorithm::Chacha20Poly1305 => chacha_decrypt(k, iv, ciphertext, ad),
     }
 }

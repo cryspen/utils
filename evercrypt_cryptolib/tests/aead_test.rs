@@ -2,6 +2,7 @@ use evercrypt_cryptolib::*;
 use hacspec_lib::*;
 
 #[test]
+#[cfg(target_arch = "x86_64")] // No AES-GCM on ARM :(
 fn aead() {
     let k = ByteSeq::from_hex("0123456789abcdef0123456789abcdef");
     let iv = ByteSeq::from_hex("151515151515151515151515");
