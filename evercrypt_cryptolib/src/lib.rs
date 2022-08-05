@@ -367,11 +367,11 @@ fn rsa_pss_sha256_verify_unsafe(
     payload: &ByteSeq,
     sig: &ByteSeq,
 ) -> EmptyResult {
-    let n = RsaPssPublicKey::new(
-        RsaPssKeySize::try_from(pk.0.len()).unwrap(),
-        &pk.0.to_native(),
-    )
-    .unwrap();
+    let mut pk = pk.0.to_native();
+    if pk[0] == 0x00 {
+        pk.remove(0);
+    }
+    let n = RsaPssPublicKey::new(RsaPssKeySize::try_from(pk.len()).unwrap(), &pk).unwrap();
     let digest = DigestAlgorithm::Sha256;
     match rsa_pss_verify(
         digest,
