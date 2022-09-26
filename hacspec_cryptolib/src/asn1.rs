@@ -129,13 +129,13 @@ fn skip_sequence(b: &ByteSeq, mut offset: usize) -> UsizeResult {
 /// Note that this might be missing. So we don't fail in here.
 fn read_version_number(b: &ByteSeq, mut offset: usize) -> UsizeResult {
     match check_tag(b, offset, 0xA0u8) {
-        Ok(_) => {
+        EmptyResult::Ok(_) => {
             offset = offset + 1;
 
             let length = short_length(b, offset)?;
             UsizeResult::Ok(offset + 1 + length)
         }
-        Err(_) => UsizeResult::Ok(offset),
+        EmptyResult::Err(_) => UsizeResult::Ok(offset),
     }
 }
 

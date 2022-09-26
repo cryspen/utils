@@ -1,4 +1,6 @@
+#[cfg(target_arch = "x86_64")]
 use evercrypt_cryptolib::*;
+#[cfg(target_arch = "x86_64")]
 use hacspec_lib::*;
 
 #[test]

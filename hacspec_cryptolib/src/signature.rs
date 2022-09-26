@@ -1,23 +1,5 @@
 use crate::*;
 
-// Some ASN.1 helper functions
-fn get_length_length(b: &ByteSeq) -> usize {
-    if U8::declassify(b[0]) >> 7 == 1u8 {
-        declassify_usize_from_U8(b[0] & U8(0x7fu8))
-    } else {
-        0
-    }
-}
-
-fn get_length(b: &ByteSeq, len: usize) -> usize {
-    declassify_u32_from_U32(U32_from_be_bytes(U32Word::from_slice(b, 0, len))) as usize
-        >> ((4 - len) * 8)
-}
-
-fn get_short_length(b: &ByteSeq) -> usize {
-    declassify_usize_from_U8(b[0] & U8(0x7fu8))
-}
-
 fn concat_signature(r: P256Scalar, s: P256Scalar) -> Result<Signature, CryptoError> {
     let signature = Signature::new(0)
         .concat_owned(r.to_byte_seq_be())

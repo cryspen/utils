@@ -530,7 +530,10 @@ fn aesgcm_decrypt_unsafe(
         &ad.to_native(),
     ) {
         Ok(ptxt) => Ok(ByteSeq::from_public_slice(&ptxt)),
-        Err(_e) => Err(MAC_FAILED),
+        Err(_e) => {
+            // println!(" >>> aesgcm_decrypt_unsafe error");
+            Err(MAC_FAILED)
+        }
     }
 }
 
@@ -560,7 +563,10 @@ fn chachapoly_decrypt_unsafe(
         &ad.to_native(),
     ) {
         Ok(ptxt) => Ok(ByteSeq::from_public_slice(&ptxt)),
-        Err(_e) => Err(MAC_FAILED),
+        Err(_e) => {
+            // println!(" >>> chachapoly_decrypt_unsafe error");
+            Err(MAC_FAILED)
+        }
     }
 }
 

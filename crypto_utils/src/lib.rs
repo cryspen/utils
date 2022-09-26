@@ -5,7 +5,7 @@ pub use errors::*;
 /// Named ECC curves.
 ///
 /// `Secp256r1` and `X25519` are supported.
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum NamedGroup {
     X25519,
     X448,
@@ -29,7 +29,7 @@ pub fn kem_pub_len(ks: &KemScheme) -> usize {
 /// Hash algorithms
 ///
 /// Only `SHA256` is supported.
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum HashAlgorithm {
     SHA256,
     SHA384,
@@ -39,7 +39,7 @@ pub enum HashAlgorithm {
 /// AEAD algorithms
 ///
 /// `Chacha20Poly1305` and `Aes128Gcm` are supported.
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum AeadAlgorithm {
     Chacha20Poly1305,
     Aes128Gcm,
