@@ -37,6 +37,26 @@ pub fn sign(
     }
 }
 
+fn validate_signature(r: &P256Scalar, s: &P256Scalar) -> EmptyResult {
+    let r_value = r.to_public_byte_seq_be();
+    let s_value = s.to_public_byte_seq_be();
+    let order = Seq::<u8>::from_native_slice(&[
+        0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        0xff, 0xbc, 0xe6, 0xfa, 0xad, 0xa7, 0x17, 0x9e, 0x84, 0xf3, 0xb9, 0xca, 0xc2, 0xfc, 0x63,
+        0x25, 0x51,
+    ]);
+    let zero = Seq::<u8>::from_native_slice(&[
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00,
+    ]);
+    if order == s_value || order == r_value || s_value == zero || r_value == zero {
+        EmptyResult::Err(VERIFY_FAILED)
+    } else {
+        EmptyResult::Ok(())
+    }
+}
+
 fn p256_verify(pk: &VerificationKey, payload: &ByteSeq, sig: &ByteSeq) -> EmptyResult {
     println!(
         "P256 verification with\n\tpk {}\n of\t\n{}",
@@ -51,6 +71,7 @@ fn p256_verify(pk: &VerificationKey, payload: &ByteSeq, sig: &ByteSeq) -> EmptyR
         P256Scalar::from_byte_seq_be(&sig.slice(0, 32)),
         P256Scalar::from_byte_seq_be(&sig.slice(32, 32)),
     );
+    validate_signature(&r, &s)?;
     match ecdsa_p256_sha256_verify(payload, (pk_x, pk_y), (r, s)) {
         P256VerifyResult::Ok(()) => EmptyResult::Ok(()),
         P256VerifyResult::Err(_) => EmptyResult::Err(VERIFY_FAILED),

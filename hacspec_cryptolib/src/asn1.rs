@@ -21,11 +21,11 @@ use crate::*;
 pub struct CertificateKey(usize, usize);
 
 pub type Asn1Error = u8;
-pub const ASN1_SEQUENCE_TOO_LONG: Asn1Error = 1u8;
-pub const ASN1_INVALID_TAG: Asn1Error = 2u8;
-pub const ASN1_INVALID_CERTIFICATE: Asn1Error = 3u8;
-pub const ASN1_UNSUPPORTED_ALGORITHM: Asn1Error = 4u8;
-pub const ASN1_ERROR: Asn1Error = 5u8;
+pub const ASN1_SEQUENCE_TOO_LONG: Asn1Error = 21u8;
+pub const ASN1_INVALID_TAG: Asn1Error = 22u8;
+pub const ASN1_INVALID_CERTIFICATE: Asn1Error = 23u8;
+pub const ASN1_UNSUPPORTED_ALGORITHM: Asn1Error = 24u8;
+pub const ASN1_ERROR: Asn1Error = 25u8;
 
 type UsizeResult = Result<usize, Asn1Error>;
 type DoubleUsizeResult = Result<(usize, usize), Asn1Error>;
