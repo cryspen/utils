@@ -61,8 +61,7 @@ pub fn named_group_support(named_group: &NamedGroup) -> EmptyResult {
 /// Check if a [HashAlgorithm] is supported.
 pub fn hash_support(hash: &HashAlgorithm) -> EmptyResult {
     match hash {
-        HashAlgorithm::SHA256 => EmptyResult::Ok(()),
-        HashAlgorithm::SHA384 => EmptyResult::Err(UNSUPPORTED_ALGORITHM),
+        HashAlgorithm::SHA256 | HashAlgorithm::SHA384 => EmptyResult::Ok(()),
         HashAlgorithm::SHA512 => EmptyResult::Err(UNSUPPORTED_ALGORITHM),
     }
 }
@@ -70,18 +69,18 @@ pub fn hash_support(hash: &HashAlgorithm) -> EmptyResult {
 /// Check if a [AeadAlgorithm] is supported.
 pub fn aead_support(aead: &AeadAlgorithm) -> EmptyResult {
     match aead {
-        AeadAlgorithm::Chacha20Poly1305 => EmptyResult::Ok(()),
-        AeadAlgorithm::Aes128Gcm => EmptyResult::Ok(()),
-        AeadAlgorithm::Aes256Gcm => EmptyResult::Err(UNSUPPORTED_ALGORITHM),
+        AeadAlgorithm::Chacha20Poly1305 | AeadAlgorithm::Aes128Gcm | AeadAlgorithm::Aes256Gcm => {
+            EmptyResult::Ok(())
+        }
     }
 }
 
 /// Check if a [SignatureScheme] is supported.
 pub fn signature_support(signature: &SignatureScheme) -> EmptyResult {
     match signature {
-        SignatureScheme::ED25519 => EmptyResult::Ok(()),
-        SignatureScheme::EcdsaSecp256r1Sha256 => EmptyResult::Ok(()),
-        SignatureScheme::RsaPssRsaSha256 => EmptyResult::Ok(()),
+        SignatureScheme::ED25519
+        | SignatureScheme::EcdsaSecp256r1Sha256
+        | SignatureScheme::RsaPssRsaSha256 => EmptyResult::Ok(()),
     }
 }
 
@@ -229,11 +228,19 @@ fn sha256_unsafe(payload: &ByteSeq) -> CryptoByteSeqResult {
     )))
 }
 
+// FIXME: #98 add #[unsafe_hacspec] attribute
+fn sha384_unsafe(payload: &ByteSeq) -> CryptoByteSeqResult {
+    Ok(Digest::from_public_slice(&evercrypt::digest::hash(
+        DigestAlgorithm::Sha384,
+        &payload.to_native(),
+    )))
+}
+
 /// Hash the `payload` with [`HashAlgorithm`].
 pub fn hash(ha: &HashAlgorithm, payload: &ByteSeq) -> CryptoByteSeqResult {
     match ha {
         HashAlgorithm::SHA256 => sha256_unsafe(payload),
-        HashAlgorithm::SHA384 => CryptoByteSeqResult::Err(UNSUPPORTED_ALGORITHM),
+        HashAlgorithm::SHA384 => sha384_unsafe(payload),
         HashAlgorithm::SHA512 => CryptoByteSeqResult::Err(UNSUPPORTED_ALGORITHM),
     }
 }
@@ -250,11 +257,21 @@ fn hmac_sha256_unsafe(mk: &MacKey, payload: &ByteSeq) -> CryptoByteSeqResult {
     )))
 }
 
+// FIXME: #98 add #[unsafe_hacspec] attribute
+fn hmac_sha384_unsafe(mk: &MacKey, payload: &ByteSeq) -> CryptoByteSeqResult {
+    Ok(HMAC::from_public_slice(&evercrypt::hmac::hmac(
+        HmacAlgorithm::Sha384,
+        &mk.to_native(),
+        &payload.to_native(),
+        None,
+    )))
+}
+
 /// Compute tha HMAC tag on the given `payload` with the [`HashAlgorithm`] and [`MacKey`].
 pub fn hmac_tag(ha: &HashAlgorithm, mk: &MacKey, payload: &ByteSeq) -> CryptoByteSeqResult {
     match ha {
         HashAlgorithm::SHA256 => hmac_sha256_unsafe(mk, payload),
-        HashAlgorithm::SHA384 => CryptoByteSeqResult::Err(UNSUPPORTED_ALGORITHM),
+        HashAlgorithm::SHA384 => hmac_sha384_unsafe(mk, payload),
         HashAlgorithm::SHA512 => CryptoByteSeqResult::Err(UNSUPPORTED_ALGORITHM),
     }
 }
@@ -409,7 +426,7 @@ pub fn verify(
 // === HKDF === //
 
 // FIXME: #98 add #[unsafe_hacspec] attribute
-fn hkdf_extract_unsafe(k: &Key, salt: &Key) -> CryptoByteSeqResult {
+fn hkdf_extract_unsafe_sha256(k: &Key, salt: &Key) -> CryptoByteSeqResult {
     Ok(Key::from_public_slice(&hkdf::extract(
         HmacAlgorithm::Sha256,
         &salt.to_native(),
@@ -418,9 +435,28 @@ fn hkdf_extract_unsafe(k: &Key, salt: &Key) -> CryptoByteSeqResult {
 }
 
 // FIXME: #98 add #[unsafe_hacspec] attribute
-fn hkdf_expand_unsafe(k: &Key, info: &ByteSeq, len: usize) -> CryptoByteSeqResult {
+fn hkdf_extract_unsafe_sha384(k: &Key, salt: &Key) -> CryptoByteSeqResult {
+    Ok(Key::from_public_slice(&hkdf::extract(
+        HmacAlgorithm::Sha384,
+        &salt.to_native(),
+        &k.to_native(),
+    )))
+}
+
+// FIXME: #98 add #[unsafe_hacspec] attribute
+fn hkdf_expand_unsafe_sha256(k: &Key, info: &ByteSeq, len: usize) -> CryptoByteSeqResult {
     Ok(Key::from_public_slice(&hkdf::expand(
         HmacAlgorithm::Sha256,
+        &k.to_native(),
+        &info.to_native(),
+        len,
+    )))
+}
+
+// FIXME: #98 add #[unsafe_hacspec] attribute
+fn hkdf_expand_unsafe_sha384(k: &Key, info: &ByteSeq, len: usize) -> CryptoByteSeqResult {
+    Ok(Key::from_public_slice(&hkdf::expand(
+        HmacAlgorithm::Sha384,
         &k.to_native(),
         &info.to_native(),
         len,
@@ -430,8 +466,8 @@ fn hkdf_expand_unsafe(k: &Key, info: &ByteSeq, len: usize) -> CryptoByteSeqResul
 /// HKDF Extract.
 pub fn hkdf_extract(ha: &HashAlgorithm, k: &Key, salt: &Key) -> CryptoByteSeqResult {
     match ha {
-        HashAlgorithm::SHA256 => hkdf_extract_unsafe(k, salt),
-        HashAlgorithm::SHA384 => CryptoByteSeqResult::Err(UNSUPPORTED_ALGORITHM),
+        HashAlgorithm::SHA256 => hkdf_extract_unsafe_sha256(k, salt),
+        HashAlgorithm::SHA384 => hkdf_extract_unsafe_sha384(k, salt),
         HashAlgorithm::SHA512 => CryptoByteSeqResult::Err(UNSUPPORTED_ALGORITHM),
     }
 }
@@ -439,8 +475,8 @@ pub fn hkdf_extract(ha: &HashAlgorithm, k: &Key, salt: &Key) -> CryptoByteSeqRes
 /// HKDF Expand.
 pub fn hkdf_expand(ha: &HashAlgorithm, k: &Key, info: &ByteSeq, len: usize) -> CryptoByteSeqResult {
     match ha {
-        HashAlgorithm::SHA256 => hkdf_expand_unsafe(k, info, len),
-        HashAlgorithm::SHA384 => CryptoByteSeqResult::Err(UNSUPPORTED_ALGORITHM),
+        HashAlgorithm::SHA256 => hkdf_expand_unsafe_sha256(k, info, len),
+        HashAlgorithm::SHA384 => hkdf_expand_unsafe_sha384(k, info, len),
         HashAlgorithm::SHA512 => CryptoByteSeqResult::Err(UNSUPPORTED_ALGORITHM),
     }
 }
@@ -448,7 +484,7 @@ pub fn hkdf_expand(ha: &HashAlgorithm, k: &Key, info: &ByteSeq, len: usize) -> C
 // === AEAD === //
 
 // FIXME: #98 add #[unsafe_hacspec] attribute
-fn aesgcm_encrypt_unsafe(
+fn aesgcm128_encrypt_unsafe(
     k: &AeadKey,
     iv: &AeadIv,
     payload: &ByteSeq,
@@ -458,6 +494,27 @@ fn aesgcm_encrypt_unsafe(
     nonce.copy_from_slice(&iv.to_native());
     match evercrypt::aead::encrypt(
         AeadMode::Aes128Gcm,
+        &k.to_native(),
+        &payload.to_native(),
+        &nonce,
+        &ad.to_native(),
+    ) {
+        Ok((c, t)) => Ok(ByteSeq::from_public_slice(&c).concat(&ByteSeq::from_public_slice(&t))),
+        Err(_e) => Err(CRYPTO_ERROR),
+    }
+}
+
+// FIXME: #98 add #[unsafe_hacspec] attribute
+fn aesgcm256_encrypt_unsafe(
+    k: &AeadKey,
+    iv: &AeadIv,
+    payload: &ByteSeq,
+    ad: &ByteSeq,
+) -> CryptoByteSeqResult {
+    let mut nonce = [0u8; 12];
+    nonce.copy_from_slice(&iv.to_native());
+    match evercrypt::aead::encrypt(
+        AeadMode::Aes256Gcm,
         &k.to_native(),
         &payload.to_native(),
         &nonce,
@@ -498,14 +555,14 @@ pub fn aead_encrypt(
     ad: &ByteSeq,
 ) -> CryptoByteSeqResult {
     match a {
-        AeadAlgorithm::Aes128Gcm => aesgcm_encrypt_unsafe(k, iv, payload, ad),
+        AeadAlgorithm::Aes128Gcm => aesgcm128_encrypt_unsafe(k, iv, payload, ad),
         AeadAlgorithm::Chacha20Poly1305 => chachapoly_encrypt_unsafe(k, iv, payload, ad),
-        AeadAlgorithm::Aes256Gcm => CryptoByteSeqResult::Err(UNSUPPORTED_ALGORITHM),
+        AeadAlgorithm::Aes256Gcm => aesgcm256_encrypt_unsafe(k, iv, payload, ad),
     }
 }
 
 // FIXME: #98 add #[unsafe_hacspec] attribute
-fn aesgcm_decrypt_unsafe(
+fn aesgcm128_decrypt_unsafe(
     k: &AeadKey,
     iv: &AeadIv,
     ciphertext: &ByteSeq,
@@ -515,6 +572,39 @@ fn aesgcm_decrypt_unsafe(
     nonce.copy_from_slice(&iv.to_native());
     match evercrypt::aead::decrypt(
         AeadMode::Aes128Gcm,
+        &k.to_native(),
+        &ciphertext
+            .slice_range(0..ciphertext.len() - 16)
+            .iter()
+            .map(|&x| x.declassify())
+            .collect::<Vec<u8>>(),
+        &ciphertext
+            .slice_range(ciphertext.len() - 16..ciphertext.len())
+            .iter()
+            .map(|&x| x.declassify())
+            .collect::<Vec<u8>>(),
+        &nonce,
+        &ad.to_native(),
+    ) {
+        Ok(ptxt) => Ok(ByteSeq::from_public_slice(&ptxt)),
+        Err(_e) => {
+            // println!(" >>> aesgcm_decrypt_unsafe error");
+            Err(MAC_FAILED)
+        }
+    }
+}
+
+// FIXME: #98 add #[unsafe_hacspec] attribute
+fn aesgcm256_decrypt_unsafe(
+    k: &AeadKey,
+    iv: &AeadIv,
+    ciphertext: &ByteSeq,
+    ad: &ByteSeq,
+) -> CryptoByteSeqResult {
+    let mut nonce = [0u8; 12];
+    nonce.copy_from_slice(&iv.to_native());
+    match evercrypt::aead::decrypt(
+        AeadMode::Aes256Gcm,
         &k.to_native(),
         &ciphertext
             .slice_range(0..ciphertext.len() - 16)
@@ -579,8 +669,8 @@ pub fn aead_decrypt(
     ad: &ByteSeq,
 ) -> CryptoByteSeqResult {
     match a {
-        AeadAlgorithm::Aes128Gcm => aesgcm_decrypt_unsafe(k, iv, ciphertext, ad),
+        AeadAlgorithm::Aes128Gcm => aesgcm128_decrypt_unsafe(k, iv, ciphertext, ad),
         AeadAlgorithm::Chacha20Poly1305 => chachapoly_decrypt_unsafe(k, iv, ciphertext, ad),
-        AeadAlgorithm::Aes256Gcm => CryptoByteSeqResult::Err(UNSUPPORTED_ALGORITHM),
+        AeadAlgorithm::Aes256Gcm => aesgcm256_decrypt_unsafe(k, iv, ciphertext, ad),
     }
 }
