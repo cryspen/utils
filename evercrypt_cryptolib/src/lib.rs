@@ -621,7 +621,7 @@ fn aesgcm256_decrypt_unsafe(
     ) {
         Ok(ptxt) => Ok(ByteSeq::from_public_slice(&ptxt)),
         Err(_e) => {
-            // println!(" >>> aesgcm_decrypt_unsafe error");
+            // println!(" >>> aesgcm_decrypt_unsafe error {:?}", _e);
             Err(MAC_FAILED)
         }
     }

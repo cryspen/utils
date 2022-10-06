@@ -81,7 +81,7 @@ pub fn ae_key_len(ae: &AeadAlgorithm) -> usize {
     match ae {
         AeadAlgorithm::Chacha20Poly1305 => 32,
         AeadAlgorithm::Aes128Gcm => 16,
-        AeadAlgorithm::Aes256Gcm => 16,
+        AeadAlgorithm::Aes256Gcm => 32,
     }
 }
 
