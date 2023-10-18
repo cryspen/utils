@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 hacspec-lib = { git = "https://github.com/hacspec/hacspec", package = "hacspec-lib" }
 crypto_utils = { path = "../crypto_utils" }
-evercrypt = { git = "https://github.com/cryspen/hacl-packages", package = "hacl-rust" }
+evercrypt = { git = "https://github.com/cryspen/hacl-packages", package = "hacl" }
 
 # [patch."https://github.com/cryspen/hacl-packages"]
 # evercrypt = { path = "../../hacl-packages/rust", package = "hacl-rust" }
