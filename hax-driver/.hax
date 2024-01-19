@@ -1,0 +1,2 @@
+[target]
+include = "-** +libcrux::kem::kyber::** -libcrux::hacl::sha3::** -libcrux::jasmin::sha3::** -libcrux::digest::** -libcrux::**::types::index_impls::**"

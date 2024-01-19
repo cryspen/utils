@@ -1,0 +1,11 @@
+[package]
+name = "hax-driver"
+version = "0.1.0"
+edition = "2021"
+authors = ["Cryspen"]
+
+[dependencies]
+cargo_metadata = "0.18.1"
+clap = { version = "4.4.11", features = ["derive"] }
+serde = { version = "1.0.193", features = ["derive"] }
+toml = "0.8.8"

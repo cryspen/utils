@@ -1,0 +1,11 @@
+[[target]]
+name = "test-crate"
+include = "-** +**::sub"
+fstar = { path = "/Users/franziskus/repos/everest/FStar/bin/fstar.exe" }
+
+[[target]]
+name = "test-crate"
+fstar = { path = "/Users/franziskus/repos/everest/FStar/bin/fstar.exe" }
+
+[[target]]
+name = "other-crate"
